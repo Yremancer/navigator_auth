@@ -1,0 +1,106 @@
+name: Pipeline
+
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [dev, main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create .env
+        run: |
+          cat > .env <<EOF
+          DB_USER=ci
+          DB_PASSWORD=ci
+          DB_HOST=db
+          DB_PORT=5432
+          DB_NAME=ci
+
+          BACKEND_PORT=8000
+          ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
+
+          OIDC_ISSUER=http://localhost/ci
+          OIDC_CLIENT_ID=ci
+          OIDC_CLIENT_SECRET=ci
+          OIDC_REDIRECT_URL=http://localhost:8000/api/sso/callback
+          BASE_DOMAIN=localhost:8000
+          APPS=lifecycle
+          SESSION_COOKIE_NAME=ci_session
+          SESSION_SECRET=ci-not-a-real-secret
+          MODE=dev
+          EOF
+
+      - name: Build
+        run: docker compose -f docker-compose.yaml up --build -d backend db
+
+      - name: Check containers
+        run: docker compose -f docker-compose.yaml ps
+
+      - name: Logs on failure
+        if: failure()
+        run: docker compose -f docker-compose.yaml logs backend db
+
+      - name: Down
+        if: always()
+        run: docker compose -f docker-compose.yaml down -v
+
+  push:
+    needs: [build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Downcase repository owner
+        run: |
+          echo "OWNER_LC=${OWNER,,}" >> $GITHUB_ENV
+        env:
+          OWNER: ${{ github.repository_owner }}
+
+      - name: Set image tags
+        run: |
+          echo "IMAGE_TAGS=ghcr.io/${{ env.OWNER_LC }}/navigator_auth:latest,ghcr.io/${{ env.OWNER_LC }}/navigator_auth:${{ github.sha }}" >> $GITHUB_ENV
+
+      - name: Login to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: ./app
+          push: true
+          tags: ${{ env.IMAGE_TAGS }}
+
+  deploy:
+    needs: push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: root
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: 22
+          script: |
+            set -e
+            cd navigator_auth
+            docker compose pull backend
+            docker compose up -d backend
+            docker image prune -f
