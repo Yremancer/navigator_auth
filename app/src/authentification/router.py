@@ -89,9 +89,11 @@ async def callback(request: Request):
     resp.set_cookie(
         key=settings.SESSION_COOKIE_NAME,
         value=id_token,
+        domain=settings.COOKIE_DOMAIN,
         httponly=True,
-        secure=settings.MODE == "prod",
+        secure=settings.MODE != "dev",
         samesite="lax",
+        path="/",
     )
     return resp
 
@@ -99,7 +101,12 @@ async def callback(request: Request):
 @router.get("/logout")
 async def logout():
     resp = JSONResponse({"status": "200"})
-    resp.delete_cookie(settings.SESSION_COOKIE_NAME)
+    resp.delete_cookie(
+        settings.SESSION_COOKIE_NAME,
+        domain=settings.COOKIE_DOMAIN,
+        path="/",
+    )
+
     return resp
 
 

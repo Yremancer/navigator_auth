@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     BASE_DOMAIN: str
     APPS: str
     SESSION_COOKIE_NAME: str
+    COOKIE_DOMAIN: str | None = None
     SESSION_SECRET: str
 
     MODE: str
