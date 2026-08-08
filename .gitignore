@@ -1,0 +1,11 @@
+venv
+__pycache__
+*.db
+.env
+env
+*.sql
+/fgos
+/parser
+/parser
+*.snapshot
+.pytest_cache

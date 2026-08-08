@@ -1,0 +1,44 @@
+name: navigator_auth
+services:
+  backend:
+    build: ./app
+    networks:
+      - base
+    env_file:
+      - .env
+    ports:
+      - "${BACKEND_PORT}:8000"
+    volumes:
+      - ./app:/app
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres
+    networks:
+      - base
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./dumps:/docker-entrypoint-initdb.d
+      - ./dumps:/dumps
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${DB_USER} -d $${DB_NAME}"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  postgres_data:
+
+networks:
+  base:
+    driver: bridge
