@@ -18,11 +18,14 @@ class Settings(BaseSettings):
     OIDC_CLIENT_ID: str
     OIDC_CLIENT_SECRET: str
     OIDC_REDIRECT_URL: str
+    OIDC_POST_LOGOUT_REDIRECT_URL: str
     BASE_DOMAIN: str
     APPS: str
-    SESSION_COOKIE_NAME: str
     COOKIE_DOMAIN: str | None = None
     SESSION_SECRET: str
+    ACCESS_COOKIE_NAME: str = "nav-access"
+    ID_COOKIE_NAME: str = "nav-id"
+    REFRESH_COOKIE_NAME: str = "nav-refresh"
 
     MODE: str
 
