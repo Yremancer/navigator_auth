@@ -6,41 +6,36 @@ else
 endif
 
 COMPOSE := docker compose -f docker-compose.yaml
-
-merge:
-	git checkout main
-	git pull
-	git merge dev
-	git push
-	git checkout dev
-
-# dev
+BACKEND := $(COMPOSE) exec -T backend
 
 start:
 	$(COMPOSE) up --build -d  backend db
 	$(SLEEP)
-# 	$(COMPOSE) exec backend python -m alembic upgrade head
+	$(BACKEND) alembic upgrade head
 
 rebuild:
 	$(COMPOSE) down -v
 	$(COMPOSE) up --build -d  backend db
 	$(SLEEP)
-# 	$(COMPOSE) exec backend python -m alembic upgrade head
+	$(BACKEND) alembic upgrade head
 
 down:
 	$(COMPOSE) down
 
 update-api:
-	$(COMPOSE) exec backend rm -r src
-	$(COMPOSE) cp ./src backend:core
+	$(COMPOSE) restart backend
 
 update-db:
-	$(COMPOSE) exec backend python -m alembic upgrade head
+	$(BACKEND) alembic upgrade head
 
 new-migr:
-	$(COMPOSE) cp app/src/models app:/src
-	$(COMPOSE) exec app python -m alembic revision --autogenerate -m "$(name)"
-	$(COMPOSE) cp app:app/migrations/versions app/migrations
+	$(BACKEND) alembic revision --autogenerate -m "$(name)"
+
+back-migr:
+	$(BACKEND) alembic downgrade -1
+
+see-migr:
+	$(BACKEND) alembic current -v
 
 see-db:
 	$(COMPOSE) exec db psql -U postgres

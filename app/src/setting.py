@@ -37,5 +37,9 @@ class Settings(BaseSettings):
     def ALLOWED_APPS(self) -> set[str]:
         return {a.strip() for a in self.APPS.split(",") if a.strip()}
 
+    @property
+    def DATABASE_URL(self) -> str:
+        return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+
 
 settings = Settings()
