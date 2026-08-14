@@ -50,7 +50,7 @@ oauth.register(
 
 client = oauth.create_client(PROVIDER)
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter()
 
 
 def build_return_url(app: str | None, next_path: str | None) -> str:

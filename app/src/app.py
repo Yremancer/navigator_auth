@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from src.authentification.router import router as auth_controller
+from src.action.router import router as action_router
+from src.authentication.router import router as auth_controller
 from src.setting import settings
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -21,4 +22,5 @@ app.add_middleware(
     https_only=settings.MODE != "dev",
     max_age=600,
 )
-app.include_router(auth_controller)
+app.include_router(auth_controller, prefix="/auth", tags=["auth"])
+app.include_router(action_router, prefix="/action", tags=["action"])
