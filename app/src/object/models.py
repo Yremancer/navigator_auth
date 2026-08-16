@@ -13,3 +13,6 @@ class Object(Base):
     scope_type: Mapped["ScopeType"] = relationship(
         back_populates="objects", lazy="raise"
     )
+    permissions: Mapped[list["Permission"]] = relationship(
+        back_populates="object", lazy="raise"
+    )

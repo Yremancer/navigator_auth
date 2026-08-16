@@ -4,6 +4,7 @@ from src.action.router import router as action_router
 from src.authentication.router import router as auth_controller
 from src.handler import register_exception_handlers
 from src.object.router import router as object_controller
+from src.permission.router import router as permission_controller
 from src.scope.router import router as scope_type_router
 from src.setting import settings
 from starlette.middleware.sessions import SessionMiddleware
@@ -33,3 +34,4 @@ app.include_router(auth_controller, prefix="/auth", tags=["auth"])
 app.include_router(action_router, prefix="/action", tags=["action"])
 app.include_router(scope_type_router, prefix="/scope_type", tags=["scope"])
 app.include_router(object_controller, prefix="/object", tags=["object"])
+app.include_router(permission_controller, prefix="/permission", tags=["permission"])

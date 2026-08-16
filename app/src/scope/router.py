@@ -1,6 +1,11 @@
 from fastapi import APIRouter, status
 from src.scope.deps import ScopeTypeServiceDep
-from src.scope.schema import ScopeTypeAddSchema, ScopeTypeSchema, ScopeTypeUpdateSchema
+from src.scope.schema import (
+    ScopeTypeAddSchema,
+    ScopeTypeSchema,
+    ScopeTypeTreeSchema,
+    ScopeTypeUpdateSchema,
+)
 
 router = APIRouter()
 
@@ -8,6 +13,13 @@ router = APIRouter()
 @router.get("/", status_code=status.HTTP_200_OK)
 async def get_scope_types(service: ScopeTypeServiceDep) -> list[ScopeTypeSchema]:
     return await service.get_all()
+
+
+@router.get("/tree", status_code=status.HTTP_200_OK)
+async def get_scope_types_tree(
+    service: ScopeTypeServiceDep,
+) -> list[ScopeTypeTreeSchema]:
+    return await service.get_tree()
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)

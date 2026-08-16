@@ -1,5 +1,8 @@
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+from src.object.models import Object
+from src.permission.models import Permission
 from src.scope.exceptions import ScopeTypeNotFoundError
 from src.scope.models import ScopeType
 from src.scope.schema import ScopeTypeAddSchema, ScopeTypeUpdateSchema
@@ -16,6 +19,23 @@ class ScopeTypeService:
                     select(ScopeType).order_by(ScopeType.sort_order)
                 )
             ).all()
+        )
+
+    async def get_tree(self) -> list[ScopeType]:
+        return list(
+            (
+                await self.session.scalars(
+                    select(ScopeType)
+                    .options(
+                        selectinload(ScopeType.objects)
+                        .selectinload(Object.permissions)
+                        .joinedload(Permission.action)
+                    )
+                    .order_by(ScopeType.sort_order)
+                )
+            )
+            .unique()
+            .all()
         )
 
     async def add(self, payload: ScopeTypeAddSchema) -> ScopeType:
