@@ -9,6 +9,10 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.security import APIKeyCookie
 from jwt import PyJWKClient
 from src.setting import settings
+from src.user.deps import get_user_service
+from src.user.exceptions import UserNotFoundError
+from src.user.schema import UserSchema
+from src.user.service import UserService
 
 PROVIDER = "oidc"
 
@@ -129,8 +133,16 @@ async def refresh(request: Request):
 
 
 @router.get("/callback")
-async def callback(request: Request):
+async def callback(
+    request: Request, user_service: Annotated[UserService, Depends(get_user_service)]
+):
     token = await client.authorize_access_token(request)
+
+    claims = token["userinfo"]
+    await user_service.get_or_add(
+        external_id=claims["sub"], email=claims["email"], full_name=claims["name"]
+    )
+
     return_url = request.session.get("return_url", "/")
     request.session.clear()
 
@@ -165,5 +177,11 @@ async def logout_done(request: Request):
 
 
 @router.get("/me")
-async def me(claims: Annotated[dict, Depends(get_claims)]):
-    return claims
+async def me(
+    claims: Annotated[dict, Depends(get_claims)],
+    user_service: Annotated[UserService, Depends(get_user_service)],
+) -> UserSchema:
+    user = await user_service.get_by_external_id(external_id=claims["sub"])
+    if user is None:
+        raise UserNotFoundError(external_id=claims["sub"])
+    return user
