@@ -14,7 +14,9 @@ class ObjectScopeTypeSchema(BaseModel):
 class ObjectSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    code: str = Field(description="Код объекта", examples=["profile", "program"])
+    code: str = Field(
+        description="Код объекта", examples=["program.profile", "system.program"]
+    )
     title: str = Field(
         description="Название объекта", examples=["Профиль", "Программа"]
     )
@@ -24,7 +26,9 @@ class ObjectSchema(BaseModel):
 
 
 class ObjectAddSchema(BaseModel):
-    code: str = Field(description="Код объекта", examples=["profile", "program"])
+    code: str = Field(
+        description="Код внутри типа области", examples=["profile", "program"]
+    )
     title: str = Field(
         description="Название объекта", examples=["Профиль", "Программа"]
     )
@@ -35,7 +39,9 @@ class ObjectAddSchema(BaseModel):
 class ObjectAddedSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    code: str = Field(description="Код объекта", examples=["profile", "program"])
+    code: str = Field(
+        description="Код объекта", examples=["program.profile", "system.program"]
+    )
     title: str = Field(
         description="Название объекта", examples=["Профиль", "Программа"]
     )

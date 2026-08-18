@@ -1,9 +1,12 @@
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
+from src.database.utils import get_or_raise
 from src.object.exceptions import ObjectNotFoundError
 from src.object.models import Object
 from src.object.schema import ObjectAddSchema, ObjectUpdateSchema
+from src.scope.exceptions import ScopeTypeNotFoundError
+from src.scope.models import ScopeType
 
 
 class ObjectService:
@@ -22,7 +25,16 @@ class ObjectService:
         )
 
     async def add(self, payload: ObjectAddSchema) -> Object:
-        new_object = Object(**payload.model_dump(exclude_none=True))
+        await get_or_raise(
+            self.session, ScopeType, payload.scope_type_code, ScopeTypeNotFoundError
+        )
+
+        new_object = Object(
+            code=f"{payload.scope_type_code}.{payload.code}",
+            title=payload.title,
+            scope_type_code=payload.scope_type_code,
+            sort_order=payload.sort_order,
+        )
 
         if payload.sort_order is None:
             max_order = await self.session.scalar(
@@ -37,7 +49,7 @@ class ObjectService:
         return new_object
 
     async def update(self, code: str, payload: ObjectUpdateSchema) -> Object:
-        obj = self.session.scalar(select(Object).where(Object.code == code))
+        obj = await self.session.scalar(select(Object).where(Object.code == code))
 
         if obj is None:
             raise ObjectNotFoundError(code=code)

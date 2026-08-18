@@ -52,7 +52,7 @@ class ScopeTypeService:
         return new_scope_type
 
     async def update(self, code: str, payload: ScopeTypeUpdateSchema) -> ScopeType:
-        scope_type = self.session.scalar(
+        scope_type = await self.session.scalar(
             select(ScopeType).where(ScopeType.code == code)
         )
 

@@ -11,5 +11,5 @@ class Permission(Base):
     action_code: Mapped[str] = mapped_column(
         ForeignKey("action.code", ondelete="CASCADE")
     )
-    object: Mapped["Object"] = relationship(back_populates="permissions",lazy="raise")
+    object: Mapped["Object"] = relationship(back_populates="permissions", lazy="raise")
     action: Mapped["Action"] = relationship(lazy="raise")

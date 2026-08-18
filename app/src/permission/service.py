@@ -1,6 +1,11 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
+from src.action.exceptions import ActionNotFoundError
+from src.action.models import Action
+from src.database.utils import get_or_raise
+from src.object.exceptions import ObjectNotFoundError
+from src.object.models import Object
 from src.permission.exceptions import PermissionNotFoundError
 from src.permission.models import Permission
 from src.permission.schema import PermissionAddSchema
@@ -21,16 +26,23 @@ class PermissionService:
             ).all()
         )
 
-    
-
     async def add(self, payload: PermissionAddSchema) -> Permission:
-        new_permission = Permission(**payload.model_dump(exclude_none=True))
+        await get_or_raise(
+            self.session, Object, payload.object_code, ObjectNotFoundError
+        )
+        await get_or_raise(
+            self.session, Action, payload.action_code, ActionNotFoundError
+        )
 
-        new_permission.code = f"{payload.object_code}.{payload.action_code}"
+        permission = Permission(
+            code=f"{payload.object_code}.{payload.action_code}",
+            object_code=payload.object_code,
+            action_code=payload.action_code,
+        )
 
-        self.session.add(new_permission)
+        self.session.add(permission)
         await self.session.flush()
-        return new_permission
+        return permission
 
     async def delete(self, code: str) -> None:
         permission = await self.session.scalar(
