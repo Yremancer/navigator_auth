@@ -20,6 +20,7 @@ class Role(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     title: Mapped[str] = mapped_column(unique=True)
     description: Mapped[str] = mapped_column(nullable=True)
+    is_super: Mapped[bool] = mapped_column(nullable=False, default=False)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=True,

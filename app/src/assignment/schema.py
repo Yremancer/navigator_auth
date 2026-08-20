@@ -1,0 +1,25 @@
+from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict, Field
+from src.role.schema import RoleListSchema
+from src.scope.schema import ScopeTypeSchema
+from src.user.schema import UserSchema
+
+
+class AssignmentSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int = Field(description="ID назначения")
+    user: UserSchema = Field(description="Пользователь, которому назначили роль")
+    role: RoleListSchema = Field(description="Назначенная роль")
+    scope_type: ScopeTypeSchema = Field(description="Тип области назначения")
+    scope_id: int = Field(description="ID обьекта назначения")
+    granted_by: UserSchema = Field(description="Пользователь, который назначил роль")
+    created_at: datetime = Field(description="Дата созданий")
+
+
+class AssignmentAddSchema(BaseModel):
+    user_id: int = Field(description="ID пользователя, которому назначили роль")
+    role_id: int = Field(description="ID назначенной роли")
+    scope_type_code: str = Field(description="Код типа области назначения")
+    scope_id: int = Field(description="ID обьекта назначения. Система = 0")

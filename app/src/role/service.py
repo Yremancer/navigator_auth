@@ -44,7 +44,6 @@ class RoleService:
 
         if role is None:
             raise RoleNotFoundError(id=id)
-
         for field, value in (
             payload.model_dump(exclude_unset=True, exclude={"permissions"})
         ).items():

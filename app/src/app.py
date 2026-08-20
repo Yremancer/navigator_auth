@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.action.router import router as action_router
+from src.assignment.router import router as assignment_router
 from src.authentication.router import router as auth_controller
 from src.handler import register_exception_handlers
 from src.object.router import router as object_controller
@@ -39,3 +40,4 @@ app.include_router(object_controller, prefix="/object", tags=["object"])
 app.include_router(permission_controller, prefix="/permission", tags=["permission"])
 app.include_router(user_controller, prefix="/user", tags=["user"])
 app.include_router(role_controller, prefix="/role", tags=["role"])
+app.include_router(assignment_router, prefix="/assignment", tags=["assignment"])

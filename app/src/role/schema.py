@@ -9,7 +9,8 @@ class RoleListSchema(BaseModel):
 
     id: int = Field(description="ID роли")
     title: str = Field(description="Название роли", examples=["РОП", "Профильный РОП"])
-    description: str | None = Field(description="Описание роли")
+    description: str | None = Field(default=None, description="Описание роли")
+    is_super: bool | None = Field(description="Флаг супер роли")
     updated_at: datetime | None = Field(description="Дата последнего обновления")
     created_at: datetime = Field(description="Дата созданий")
 
@@ -22,7 +23,8 @@ class RoleDetailSchema(RoleListSchema):
 
 class RoleAddSchema(BaseModel):
     title: str = Field(description="Название роли", examples=["РОП", "Профильный РОП"])
-    description: str | None = Field(description="Описание роли")
+    description: str | None = Field(default=None, description="Описание роли")
+    is_super: bool | None = Field(default=None, description="Флаг супер роли")
     permissions: list[str] = Field(
         description=("Коды прав роли"), examples=["program.profile.read"]
     )
@@ -41,6 +43,7 @@ class RoleAddedSchema(BaseModel):
     id: int = Field(description="ID роли")
     title: str = Field(description="Название роли", examples=["РОП", "Профильный РОП"])
     description: str | None = Field(description="Описание роли")
+    is_super: bool | None = Field(description="Флаг супер роли")
     updated_at: datetime | None = Field(description="Дата последнего обновления")
     created_at: datetime = Field(description="Дата созданий")
     permissions: list[RolePermissionSchema] = Field(
