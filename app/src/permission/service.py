@@ -45,12 +45,9 @@ class PermissionService:
         return permission
 
     async def delete(self, code: str) -> None:
-        permission = await self.session.scalar(
-            select(Permission).where(Permission.code == code)
+        permission = await get_or_raise(
+            self.session, Permission, code, PermissionNotFoundError
         )
-
-        if permission is None:
-            raise PermissionNotFoundError(code=code)
 
         await self.session.delete(permission)
 

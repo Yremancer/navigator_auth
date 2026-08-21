@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.action.exceptions import ActionNotFoundError
 from src.action.models import Action
 from src.action.schemas import ActionAddSchema, ActionUpdateSchema
+from src.database.utils import get_or_raise
 
 
 class ActionService:
@@ -28,10 +29,12 @@ class ActionService:
         return new_action
 
     async def update(self, code: str, payload: ActionUpdateSchema) -> Action:
-        action = await self.session.scalar(select(Action).where(Action.code == code))
-
-        if action is None:
-            raise ActionNotFoundError(code=code)
+        action = await get_or_raise(
+            session=self.session,
+            model=Action,
+            pk=id,
+            exc=ActionNotFoundError,
+        )
 
         for field, value in (payload.model_dump(exclude_unset=True)).items():
             setattr(action, field, value)
@@ -41,10 +44,12 @@ class ActionService:
         return action
 
     async def delete(self, code: str) -> None:
-        action = await self.session.scalar(select(Action).where(Action.code == code))
-
-        if action is None:
-            raise ActionNotFoundError(code=code)
+        action = await get_or_raise(
+            session=self.session,
+            model=Action,
+            pk=id,
+            exc=ActionNotFoundError,
+        )
 
         await self.session.delete(action)
 

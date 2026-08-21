@@ -1,6 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
+from src.database.utils import get_or_raise
 from src.permission.exceptions import PermissionNotFoundError
 from src.permission.models import Permission
 from src.role.exceptions import RoleNotFoundError
@@ -40,10 +41,12 @@ class RoleService:
         return role
 
     async def update(self, id: int, payload: RoleUpdateSchema) -> Role:
-        role = await self.session.scalar(select(Role).where(Role.id == id))
-
-        if role is None:
-            raise RoleNotFoundError(id=id)
+        role = await get_or_raise(
+            session=self.session,
+            model=Role,
+            pk=id,
+            exc=RoleNotFoundError,
+        )
         for field, value in (
             payload.model_dump(exclude_unset=True, exclude={"permissions"})
         ).items():
@@ -57,11 +60,12 @@ class RoleService:
         return role
 
     async def delete(self, id: int) -> None:
-        role = await self.session.scalar(select(Role).where(Role.id == id))
-
-        if role is None:
-            raise RoleNotFoundError(id=id)
-
+        role = await get_or_raise(
+            session=self.session,
+            model=Role,
+            pk=id,
+            exc=RoleNotFoundError,
+        )
         await self.session.delete(role)
 
         await self.session.flush()

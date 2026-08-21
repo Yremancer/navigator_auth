@@ -49,10 +49,12 @@ class ObjectService:
         return new_object
 
     async def update(self, code: str, payload: ObjectUpdateSchema) -> Object:
-        obj = await self.session.scalar(select(Object).where(Object.code == code))
-
-        if obj is None:
-            raise ObjectNotFoundError(code=code)
+        obj = await get_or_raise(
+            session=self.session,
+            model=Object,
+            pk=id,
+            exc=ObjectNotFoundError,
+        )
 
         for field, value in (payload.model_dump(exclude_unset=True)).items():
             setattr(obj, field, value)
@@ -61,10 +63,12 @@ class ObjectService:
         return obj
 
     async def delete(self, code: str) -> None:
-        obj = await self.session.scalar(select(Object).where(Object.code == code))
-
-        if obj is None:
-            raise ObjectNotFoundError(code=code)
+        obj = await get_or_raise(
+            session=self.session,
+            model=Object,
+            pk=id,
+            exc=ObjectNotFoundError,
+        )
 
         await self.session.delete(obj)
 

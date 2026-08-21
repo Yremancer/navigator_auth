@@ -54,8 +54,6 @@ class AssignmentService:
             exc=ScopeNotFoundError,
         )
 
-        # TODO проверка на существование scope_id
-
         new_assignment = Assignment(**payload.model_dump(exclude_none=True))
         new_assignment.user = user
         new_assignment.role = role
@@ -67,12 +65,12 @@ class AssignmentService:
         return new_assignment
 
     async def delete(self, id: int) -> None:
-        assignment = await self.session.scalar(
-            select(Assignment).where(Assignment.id == id)
+        assignment = await get_or_raise(
+            session=self.session,
+            model=Assignment,
+            pk=id,
+            exc=AssignmentNotFoundError,
         )
-
-        if assignment is None:
-            raise AssignmentNotFoundError(id=id)
 
         await self.session.delete(assignment)
 

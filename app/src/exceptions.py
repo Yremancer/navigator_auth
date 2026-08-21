@@ -17,6 +17,6 @@ class ConflictError(AppError):
     detail = "Conflict"
 
 
-class PermissionDeniedError(AppError):
+class ForbiddenError(AppError):
     status_code = 403
-    detail = "Permission denied"
+    detail = "Forbidden"

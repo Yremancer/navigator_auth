@@ -29,6 +29,8 @@ class Settings(BaseSettings):
 
     MODE: str
 
+    SYSTEM_SCOPE_ID: int = 0
+
     @property
     def ORIGINS(self) -> list[str]:
         return [o.strip() for o in self.ALLOWED_ORIGINS.split(",") if o.strip()]
