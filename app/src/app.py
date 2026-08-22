@@ -1,9 +1,13 @@
+from contextlib import asynccontextmanager
+
+import httpx
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.access.router import router as access_router
 from src.action.router import router as action_router
 from src.assignment.router import router as assignment_router
 from src.authentication.router import router as auth_controller
+from src.authentication.setup import setup_auth
 from src.handler import register_exception_handlers
 from src.object.router import router as object_controller
 from src.permission.router import router as permission_controller
@@ -13,7 +17,16 @@ from src.setting import settings
 from src.user.router import router as user_controller
 from starlette.middleware.sessions import SessionMiddleware
 
-app = FastAPI(root_path="/api")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    app.state.http = httpx.AsyncClient(timeout=httpx.Timeout(5.0, connect=2.0))
+    await setup_auth(app, app.state.http)
+    yield
+    await app.state.http.aclose()
+
+
+app = FastAPI(root_path="/api", lifespan=lifespan)
 register_exception_handlers(app)
 
 app.add_middleware(

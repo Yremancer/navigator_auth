@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     ACCESS_COOKIE_NAME: str = "nav-access"
     ID_COOKIE_NAME: str = "nav-id"
     REFRESH_COOKIE_NAME: str = "nav-refresh"
+    REFRESH_MAX_AGE: int = 60 * 60 * 24 * 30
 
     MODE: str
 
