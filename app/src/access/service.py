@@ -1,7 +1,17 @@
+from collections import defaultdict
+
 from sqlalchemy import literal, select, union, union_all
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
-from src.access.schema import CheckResult, PermissionCheck, ScopeQuery, ScopeResult
+from src.access.schema import (
+    CheckResult,
+    GrantedPermission,
+    GrantedScope,
+    PermissionCheck,
+    ScopeQuery,
+    ScopeResult,
+    UserRoleSchema,
+)
 from src.assignment.models import Assignment
 from src.role.models import Role, role_permission
 from src.scope.models import Scope
@@ -19,7 +29,7 @@ class AccessService:
         if not await self._is_active(user_id):
             return [CheckResult(**c.model_dump(), allowed=False) for c in checks]
 
-        if await self._is_superuser(user_id):
+        if await self.is_superuser(user_id):
             return [CheckResult(**c.model_dump(), allowed=True) for c in checks]
 
         granted = await self._find_granted(user_id, checks)
@@ -40,7 +50,7 @@ class AccessService:
             await self.session.scalar(select(User.is_active).where(User.id == user_id))
         )
 
-    async def _is_superuser(self, user_id: int) -> bool:
+    async def is_superuser(self, user_id: int) -> bool:
         stmt = (
             select(Assignment.id)
             .join(Role, Role.id == Assignment.role_id)
@@ -136,7 +146,7 @@ class AccessService:
         if not await self._is_active(user_id):
             return [self._empty_result(q) for q in queries]
 
-        if await self._is_superuser(user_id):
+        if await self.is_superuser(user_id):
             return [
                 ScopeResult(
                     permission=q.permission,
@@ -179,7 +189,6 @@ class AccessService:
     async def _find_reachable(
         self, user_id: int, queries: list[ScopeQuery]
     ) -> dict[tuple[str, str], set[int]]:
-
         permissions = {q.permission for q in queries}
         wanted_types = {q.target_scope_type for q in queries}
         reachable = self._build_reachable(user_id, permissions)
@@ -195,12 +204,12 @@ class AccessService:
         )
 
         rows = await self.session.execute(stmt)
-        result: dict[tuple[str, str], set[int]] = {}
+        result: dict[tuple[str, str], set[int]] = defaultdict(set)
         for permission, scope_type, scope_id in rows:
-            result.setdefault((permission, scope_type), set()).add(scope_id)
+            result[(permission, scope_type)].add(scope_id)
         return result
 
-    def _build_reachable(self, user_id: int, permissions: set[str]):
+    def _build_reachable(self, user_id: int, permissions: set[str] | None = None):
         anchor = (
             select(
                 Scope.scope_type,
@@ -216,17 +225,55 @@ class AccessService:
                 & (Scope.scope_id == Assignment.scope_id),
             )
             .join(role_permission, role_permission.c.role_id == Assignment.role_id)
-            .where(
-                Assignment.user_id == user_id,
-                role_permission.c.permission_code.in_(permissions),
-            )
+            .where(Assignment.user_id == user_id)
         )
-        labels = ("target_permission",)
 
+        if permissions is not None:
+            anchor = anchor.where(role_permission.c.permission_code.in_(permissions))
+
+        labels = ("target_permission",)
         ancestors = self._recursive_side(anchor, "reachable_up", labels, up=True)
         descendants = self._recursive_side(anchor, "reachable_down", labels, up=False)
 
-        columns = lambda side: select(
-            side.c.scope_type, side.c.scope_id, side.c.target_permission
-        )
+        def columns(side):
+            return select(side.c.scope_type, side.c.scope_id, side.c.target_permission)
+
         return union(columns(ancestors), columns(descendants)).subquery("reachable")
+
+    async def get_all_granted(self, user_id: int) -> list[GrantedPermission]:
+        if not await self.is_superuser(user_id) and not await self._is_active(user_id):
+            return []
+
+        reachable = self._build_reachable(user_id)
+
+        stmt = select(
+            reachable.c.target_permission,
+            reachable.c.scope_type,
+            reachable.c.scope_id,
+        ).distinct()
+
+        rows = await self.session.execute(stmt)
+
+        grouped: dict[str, dict[str, set[int]]] = defaultdict(lambda: defaultdict(set))
+        for permission, scope_type, scope_id in rows:
+            grouped[permission][scope_type].add(scope_id)
+
+        return [
+            GrantedPermission(
+                permission=permission,
+                scopes=[
+                    GrantedScope(scope_type=stype, scope_ids=sorted(ids))
+                    for stype, ids in sorted(by_type.items())
+                ],
+            )
+            for permission, by_type in sorted(grouped.items())
+        ]
+
+    async def get_user_roles(self, user_id: int) -> list[UserRoleSchema]:
+        rows = await self.session.execute(
+            select(Role.id, Role.title, Assignment.scope_type_code, Assignment.scope_id)
+            .join(Assignment, Assignment.role_id == Role.id)
+            .where(Assignment.user_id == user_id)
+            .order_by(Role.title)
+        )
+        return [UserRoleSchema.model_validate(row) for row in rows]

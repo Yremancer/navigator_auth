@@ -5,8 +5,8 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from src.authentication.cookies import AuthCookies
 from src.authentication.deps import AuthServiceDep, CurrentUser
 from src.authentication.exceptions import RefreshFailedError
+from src.authentication.schema import MeSchema
 from src.setting import settings
-from src.user.schema import UserSchema
 
 router = APIRouter()
 
@@ -75,5 +75,5 @@ async def logout_done(request: Request) -> RedirectResponse:
 
 
 @router.get("/me")
-async def me(current_user: CurrentUser) -> UserSchema:
-    return current_user
+async def me(current_user: CurrentUser, auth_service: AuthServiceDep) -> MeSchema:
+    return await auth_service.get_me(user=current_user)

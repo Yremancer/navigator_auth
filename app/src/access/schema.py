@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from src.setting import settings
 
 
@@ -54,3 +54,22 @@ class ScopeResult(BaseModel):
 class ScopeListResponse(BaseModel):
     user_id: int
     results: list[ScopeResult]
+
+
+class GrantedScope(BaseModel):
+    scope_type: str = Field(examples=["program"])
+    scope_ids: list[int] = Field(examples=[[17, 23]])
+
+
+class GrantedPermission(BaseModel):
+    permission: str = Field(examples=["program.program.update"])
+    scopes: list[GrantedScope]
+
+
+class UserRoleSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    title: str
+    scope_type_code: str
+    scope_id: int

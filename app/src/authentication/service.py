@@ -4,7 +4,9 @@ from urllib.parse import urlencode, urlsplit
 import jwt
 from authlib.integrations.base_client import OAuthError
 from jwt import PyJWKClient
+from src.access.service import AccessService
 from src.authentication.exceptions import InvalidTokenError, RefreshFailedError
+from src.authentication.schema import MeSchema
 from src.setting import settings
 from src.user.models import User
 from src.user.service import UserService
@@ -14,11 +16,16 @@ from starlette.responses import RedirectResponse
 
 class AuthService:
     def __init__(
-        self, oauth_client: Any, jwks: PyJWKClient, users: UserService
+        self,
+        oauth_client: Any,
+        jwks: PyJWKClient,
+        users: UserService,
+        access: AccessService,
     ) -> None:
         self._oauth = oauth_client
         self._jwks = jwks
         self._users = users
+        self._access = access
 
     def decode_token(self, token: str) -> dict[str, Any]:
         try:
@@ -78,3 +85,13 @@ class AuthService:
         if id_token:
             params["id_token_hint"] = id_token
         return f"{meta['end_session_endpoint']}?{urlencode(params)}"
+
+    async def get_me(self, user: User) -> MeSchema:
+        return MeSchema(
+            id=user.id,
+            email=user.email,
+            full_name=user.full_name,
+            is_superuser=await self._access.is_superuser(user.id),
+            roles=await self._access.get_user_roles(user.id),
+            permissions=await self._access.get_all_granted(user.id),
+        )

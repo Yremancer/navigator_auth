@@ -3,6 +3,7 @@ from typing import Annotated, Any
 from fastapi import Depends, Request, Security
 from fastapi.security import APIKeyCookie
 from jwt import PyJWKClient
+from src.access.deps import AccessServiceDep
 from src.authentication.exceptions import NotAuthenticatedError
 from src.authentication.service import AuthService
 from src.setting import settings
@@ -23,8 +24,9 @@ def get_auth_service(
     oauth: Annotated[Any, Depends(get_oauth_client)],
     jwks: Annotated[PyJWKClient, Depends(get_jwks)],
     users: UserServiceDep,
+    access: AccessServiceDep,
 ) -> AuthService:
-    return AuthService(oauth, jwks, users)
+    return AuthService(oauth_client=oauth, jwks=jwks, users=users, access=access)
 
 
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
@@ -39,7 +41,7 @@ async def get_claims(
 ) -> dict[str, Any]:
     if not token:
         raise NotAuthenticatedError
-    return service.decode_token(token)
+    return service.decode_token(token=token)
 
 
 async def get_current_user(
