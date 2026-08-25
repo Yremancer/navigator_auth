@@ -19,3 +19,8 @@ class User(Base):
         foreign_keys="Assignment.user_id",
         lazy="raise",
     )
+    grants: Mapped[list["Grant"]] = relationship(
+        back_populates="user",
+        foreign_keys="Grant.user_id",
+        lazy="raise",
+    )

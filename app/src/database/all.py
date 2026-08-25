@@ -1,6 +1,7 @@
 from src.action.models import Action as Action
 from src.assignment.models import Assignment as Assignment
 from src.database.base import Base as Base
+from src.grant.models import Grant as Grant
 from src.object.models import Object as Object
 from src.permission.models import Permission as Permission
 from src.role.models import Role as Role

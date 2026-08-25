@@ -8,6 +8,7 @@ from src.action.router import router as action_router
 from src.assignment.router import router as assignment_router
 from src.authentication.router import router as auth_controller
 from src.authentication.setup import setup_auth
+from src.grant.router import router as grant_router
 from src.handler import register_exception_handlers
 from src.object.router import router as object_controller
 from src.permission.router import router as permission_controller
@@ -57,3 +58,4 @@ app.include_router(role_controller, prefix="/role", tags=["role"])
 app.include_router(assignment_router, prefix="/assignment", tags=["assignment"])
 app.include_router(access_router, prefix="/access", tags=["access"])
 app.include_router(scope_router, prefix="/scope", tags=["scope"])
+app.include_router(grant_router, prefix="/grant", tags=["grant"])

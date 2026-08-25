@@ -71,5 +71,5 @@ class UserRoleSchema(BaseModel):
 
     id: int
     title: str
-    scope_type_code: str
+    scope_type: str
     scope_id: int
