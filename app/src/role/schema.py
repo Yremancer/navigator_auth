@@ -1,59 +1,33 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 from src.permission.schema import PermissionSchema
 
 
 class RoleListSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int = Field(description="ID роли")
-    title: str = Field(description="Название роли", examples=["РОП", "Профильный РОП"])
-    description: str | None = Field(default=None, description="Описание роли")
-    is_super: bool | None = Field(description="Флаг супер роли")
-    updated_at: datetime | None = Field(description="Дата последнего обновления")
-    created_at: datetime = Field(description="Дата созданий")
+    id: int
+    title: str
+    description: str | None = None
+    is_super: bool = False
+    created_at: datetime
+    updated_at: datetime | None = None
 
 
 class RoleDetailSchema(RoleListSchema):
-    permissions: list[PermissionSchema] = Field(
-        description=("Коды прав роли"), examples=["program.profile.read"]
-    )
+    permissions: list[PermissionSchema]
 
 
 class RoleAddSchema(BaseModel):
-    title: str = Field(description="Название роли", examples=["РОП", "Профильный РОП"])
-    description: str | None = Field(default=None, description="Описание роли")
-    is_super: bool | None = Field(default=None, description="Флаг супер роли")
-    permissions: list[str] = Field(
-        description=("Коды прав роли"), examples=["program.profile.read"]
-    )
+    title: str
+    description: str | None = None
+    is_super: bool = False
+    permissions: list[str]
 
 
-class RolePermissionSchema(BaseModel):
-    code: str = Field(description="Код объекта", examples=["profile", "program"])
-    object_code: str = Field(description="Код объекта", examples=["profile", "program"])
-    action_code: str = Field(description="Код действия", examples=["read", "create"])
-    created_at: datetime = Field(description="Дата созданий")
-
-
-class RoleAddedSchema(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int = Field(description="ID роли")
-    title: str = Field(description="Название роли", examples=["РОП", "Профильный РОП"])
-    description: str | None = Field(description="Описание роли")
-    is_super: bool | None = Field(description="Флаг супер роли")
-    updated_at: datetime | None = Field(description="Дата последнего обновления")
-    created_at: datetime = Field(description="Дата созданий")
-    permissions: list[RolePermissionSchema] = Field(
-        description=("Коды прав роли"), examples=["program.profile.read"]
-    )
-
-
-class RoleUpdateSchema(RoleAddSchema):
-    pass
-
-
-class RoleUpdatedSchema(RoleAddedSchema):
-    pass
+class RoleUpdateSchema(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    is_super: bool | None = None
+    permissions: list[str] | None = None

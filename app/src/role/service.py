@@ -14,7 +14,7 @@ class RoleService:
         self.session = session
 
     async def get_by_id(self, id: int) -> Role:
-        return await self.session.scalar(
+        role = await self.session.scalar(
             select(Role)
             .where(Role.id == id)
             .options(
@@ -24,6 +24,10 @@ class RoleService:
                 )
             )
         )
+
+        if role is None:
+            raise RoleNotFoundError(id=id)
+        return role
 
     async def get_all(self) -> list[Role]:
         return list((await self.session.scalars(select(Role))).all())
@@ -41,12 +45,8 @@ class RoleService:
         return role
 
     async def update(self, id: int, payload: RoleUpdateSchema) -> Role:
-        role = await get_or_raise(
-            session=self.session,
-            model=Role,
-            pk=id,
-            exc=RoleNotFoundError,
-        )
+        role = await self.get_by_id(id=id)
+
         for field, value in (
             payload.model_dump(exclude_unset=True, exclude={"permissions"})
         ).items():
@@ -74,7 +74,12 @@ class RoleService:
         permissions = list(
             (
                 await self.session.scalars(
-                    select(Permission).where(Permission.code.in_(codes))
+                    select(Permission)
+                    .where(Permission.code.in_(codes))
+                    .options(
+                        joinedload(Permission.object),
+                        joinedload(Permission.action),
+                    )
                 )
             ).all()
         )
