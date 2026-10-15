@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any, ClassVar
 
 from sqlalchemy import Column, DateTime, ForeignKey, Table, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -17,6 +18,8 @@ role_permission = Table(
 
 
 class Role(Base):
+    __mapper_args__: ClassVar[dict[str, Any]] = {"eager_defaults": True}
+
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     title: Mapped[str] = mapped_column(unique=True)
     description: Mapped[str] = mapped_column(nullable=True)
