@@ -22,8 +22,11 @@ class AccessService:
         user_id: int,
         permission: str,
         scope_id: int = settings.SYSTEM_SCOPE_ID,
+        scope_type: str | None = None,
     ) -> bool:
-        check = PermissionCheck(permission=permission, scope_id=scope_id)
+        check = PermissionCheck(
+            permission=permission, scope_type=scope_type, scope_id=scope_id
+        )
         (result,) = await self.check_batch(user_id, [check])
         return result.allowed
 
@@ -33,21 +36,42 @@ class AccessService:
         if not checks:
             return []
 
+        checks = await self._resolve_scope_types(checks)
+
         if not await self._repo.is_active(user_id):
             return [CheckResult(**c.model_dump(), allowed=False) for c in checks]
 
         if await self.is_superuser(user_id):
             return [CheckResult(**c.model_dump(), allowed=True) for c in checks]
 
-        targets = {(c.permission, c.scope_type, c.scope_id) for c in checks}
-        granted = await self._repo.find_granted(user_id, targets)
+        targets = {
+            (c.permission, c.scope_type, c.scope_id)
+            for c in checks
+            if c.scope_type is not None
+        }
+        granted = await self._repo.find_granted(user_id, targets) if targets else set()
 
         return [
             CheckResult(
                 **c.model_dump(),
-                allowed=(c.permission, c.scope_id) in granted,
+                allowed=(c.permission, c.scope_type, c.scope_id) in granted,
             )
             for c in checks
+        ]
+
+    async def _resolve_scope_types[T: (PermissionCheck, ScopeQuery)](
+        self, items: list[T]
+    ) -> list[T]:
+        missing = {i.permission for i in items if i.scope_type is None}
+        if not missing:
+            return items
+
+        types = await self._repo.find_scope_types(missing)
+        return [
+            i
+            if i.scope_type is not None
+            else i.model_copy(update={"scope_type": types.get(i.permission)})
+            for i in items
         ]
 
     async def list_scopes(
@@ -62,6 +86,8 @@ class AccessService:
     ) -> list[ScopeResult]:
         if not queries:
             return []
+
+        queries = await self._resolve_scope_types(queries)
 
         if not await self._repo.is_active(user_id):
             return [
@@ -78,15 +104,24 @@ class AccessService:
                 ScopeResult(
                     permission=q.permission,
                     scope_type=q.scope_type,
-                    scope_ids=await self._repo.list_scope_ids(q.scope_type),
+                    scope_ids=(
+                        await self._repo.list_scope_ids(q.scope_type)
+                        if q.scope_type is not None
+                        else []
+                    ),
                 )
                 for q in queries
             ]
 
-        rows = await self._repo.find_reachable(
-            user_id,
-            permissions={q.permission for q in queries},
-            scope_types={q.scope_type for q in queries},
+        resolved = [q for q in queries if q.scope_type is not None]
+        rows = (
+            await self._repo.find_reachable(
+                user_id,
+                permissions={q.permission for q in resolved},
+                scope_types={q.scope_type for q in resolved},
+            )
+            if resolved
+            else []
         )
 
         found: dict[tuple[str, str], set[int]] = defaultdict(set)

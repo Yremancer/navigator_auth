@@ -4,6 +4,11 @@ from src.setting import settings
 
 class PermissionCheck(BaseModel):
     permission: str = Field(examples=["program.profile.update"])
+    scope_type: str | None = Field(
+        default=None,
+        description="Тип области. Если не указан берётся из объекта права",
+        examples=["program"],
+    )
     scope_id: int = Field(default=settings.SYSTEM_SCOPE_ID)
 
 
@@ -28,13 +33,9 @@ class ScopeQuery(BaseModel):
     permission: str = Field(examples=["program.program.read"])
     scope_type: str | None = Field(
         default=None,
-        description="Тип узлов в ответе. Если не указан берётся из кода права",
+        description="Тип узлов в ответе. Если не указан берётся из объекта права",
         examples=["profile"],
     )
-
-    @property
-    def target_scope_type(self) -> str:
-        return self.scope_type or self.permission.split(".", 1)[0]
 
 
 class ScopeListRequest(BaseModel):
@@ -47,7 +48,7 @@ class ScopeListRequest(BaseModel):
 
 class ScopeResult(BaseModel):
     permission: str
-    scope_type: str
+    scope_type: str | None
     scope_ids: list[int]
 
 

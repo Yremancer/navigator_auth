@@ -3,6 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 from src.assignment.models import Assignment
 from src.grant.models import Grant
+from src.object.models import Object
+from src.permission.models import Permission
 from src.role.models import Role, role_permission
 from src.scope.models import Scope
 from src.user.models import User
@@ -32,14 +34,23 @@ class AccessRepository:
         )
         return sorted(rows.all())
 
+    async def find_scope_types(self, permissions: set[str]) -> dict[str, str]:
+        stmt = (
+            select(Permission.code, Object.scope_type_code)
+            .join(Object, Object.code == Permission.object_code)
+            .where(Permission.code.in_(permissions))
+        )
+        rows = await self._session.execute(stmt)
+        return {code: scope_type for code, scope_type in rows}
+
     async def find_granted(
         self, user_id: int, targets: set[tuple[str, str, int]]
-    ) -> set[tuple[str, int]]:
+    ) -> set[tuple[str, str, int]]:
         vertical = self._expand(self._targets(targets), "vertical")
         sources = self._sources(user_id)
 
         stmt = (
-            select(vertical.c.permission, vertical.c.origin_id)
+            select(vertical.c.permission, vertical.c.origin_type, vertical.c.origin_id)
             .join(
                 sources,
                 (sources.c.permission == vertical.c.permission)
@@ -50,7 +61,10 @@ class AccessRepository:
         )
 
         rows = await self._session.execute(stmt)
-        return {(permission, origin_id) for permission, origin_id in rows}
+        return {
+            (permission, origin_type, origin_id)
+            for permission, origin_type, origin_id in rows
+        }
 
     async def find_reachable(
         self,
@@ -143,6 +157,7 @@ class AccessRepository:
             Scope.parent_type,
             Scope.parent_id,
             origins.c.permission,
+            origins.c.scope_type.label("origin_type"),
             origins.c.scope_id.label("origin_id"),
         ).join(
             origins,
@@ -168,6 +183,7 @@ class AccessRepository:
             node.parent_type,
             node.parent_id,
             cte.c.permission,
+            cte.c.origin_type,
             cte.c.origin_id,
         ).join(cte, edge)
 
@@ -179,5 +195,6 @@ class AccessRepository:
             cte.c.scope_type,
             cte.c.scope_id,
             cte.c.permission,
+            cte.c.origin_type,
             cte.c.origin_id,
         )
