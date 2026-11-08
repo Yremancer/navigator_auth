@@ -5,7 +5,7 @@ from src.database.base import Base
 
 class Object(Base):
     code: Mapped[str] = mapped_column(primary_key=True)
-    title: Mapped[str] = mapped_column(unique=True)
+    title: Mapped[str] = mapped_column()
     sort_order: Mapped[int]
     scope_type_code: Mapped[str] = mapped_column(
         ForeignKey("scopetype.code", ondelete="CASCADE")
@@ -14,5 +14,5 @@ class Object(Base):
         back_populates="objects", lazy="raise"
     )
     permissions: Mapped[list["Permission"]] = relationship(
-        back_populates="object", lazy="raise"
+        back_populates="object", lazy="raise", passive_deletes="all"
     )

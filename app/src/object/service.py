@@ -52,7 +52,7 @@ class ObjectService:
         obj = await get_or_raise(
             session=self.session,
             model=Object,
-            pk=id,
+            pk=code,
             exc=ObjectNotFoundError,
         )
 
@@ -60,13 +60,14 @@ class ObjectService:
             setattr(obj, field, value)
 
         await self.session.flush()
+        await self.session.refresh(obj, attribute_names=["scope_type"])
         return obj
 
     async def delete(self, code: str) -> None:
         obj = await get_or_raise(
             session=self.session,
             model=Object,
-            pk=id,
+            pk=code,
             exc=ObjectNotFoundError,
         )
 
