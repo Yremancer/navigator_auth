@@ -1,12 +1,22 @@
 from sqlalchemy import func, select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from src.database.utils import get_or_raise
 from src.object.models import Object
 from src.permission.models import Permission
-from src.scope.exceptions import ScopeNotFoundError, ScopeTypeNotFoundError
+from src.scope.exceptions import (
+    ScopeAlreadyExistsError,
+    ScopeNotFoundError,
+    ScopeTypeNotFoundError,
+)
 from src.scope.models import Scope, ScopeType
-from src.scope.schema import ScopeAddSchema, ScopeTypeAddSchema, ScopeTypeUpdateSchema
+from src.scope.schema import (
+    ScopeAddSchema,
+    ScopeTypeAddSchema,
+    ScopeTypeUpdateSchema,
+    ScopeUpdateSchema,
+)
 from src.setting import settings
 
 
@@ -112,11 +122,29 @@ class ScopeService:
             )
         # TODO Проверку на циклы
 
-        new_scope = Scope(**payload.model_dump(exclude_none=True))
+        statement = (
+            insert(Scope)
+            .values(**payload.model_dump(exclude_none=True))
+            .on_conflict_do_nothing(index_elements=[Scope.scope_type, Scope.scope_id])
+            .returning(Scope)
+        )
+        scope = await self.session.scalar(statement)
+        if scope is None:
+            raise ScopeAlreadyExistsError(payload.scope_type, payload.scope_id)
+        return scope
 
-        self.session.add(new_scope)
+    async def update(
+        self, scope_type: str, scope_id: int, payload: ScopeUpdateSchema
+    ) -> Scope:
+        scope = await get_or_raise(
+            session=self.session,
+            model=Scope,
+            pk=(scope_type, scope_id),
+            exc=ScopeNotFoundError,
+        )
+        scope.title = payload.title
         await self.session.flush()
-        return new_scope
+        return scope
 
     async def delete(
         self, scope_type: str, scope_id: int = settings.SYSTEM_SCOPE_ID

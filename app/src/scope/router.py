@@ -7,6 +7,7 @@ from src.scope.schema import (
     ScopeTypeSchema,
     ScopeTypeTreeSchema,
     ScopeTypeUpdateSchema,
+    ScopeUpdateSchema,
 )
 
 scope_type_router = APIRouter()
@@ -50,12 +51,21 @@ scope_router = APIRouter()
 async def get_scope(
     service: ScopeServiceDep, q: str | None = None, scope_type_code: str | None = None
 ) -> list[ScopeSchema]:
-    return await service.get_all(q=q,scope_type_code=scope_type_code)
+    return await service.get_all(q=q, scope_type_code=scope_type_code)
 
 
 @scope_router.post("/", status_code=status.HTTP_201_CREATED)
 async def add_scope(service: ScopeServiceDep, payload: ScopeAddSchema) -> ScopeSchema:
     return await service.add(payload=payload)
+
+
+@scope_router.patch("/{scope_type}/{scope_id}", status_code=status.HTTP_200_OK)
+async def update_scope(
+    service: ScopeServiceDep, scope_type: str, scope_id: int, payload: ScopeUpdateSchema
+) -> ScopeSchema:
+    return await service.update(
+        scope_type=scope_type, scope_id=scope_id, payload=payload
+    )
 
 
 @scope_router.delete("/{scope_type}/{scope_id}", status_code=status.HTTP_204_NO_CONTENT)

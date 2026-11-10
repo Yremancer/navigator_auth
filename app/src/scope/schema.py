@@ -86,3 +86,7 @@ class ScopeAddSchema(BaseModel):
     parent_id: int | None = Field(
         default=settings.SYSTEM_SCOPE_ID, description="ID области"
     )
+
+
+class ScopeUpdateSchema(BaseModel):
+    title: str = Field(min_length=1)
