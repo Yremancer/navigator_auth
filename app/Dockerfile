@@ -14,7 +14,12 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 COPY . .
 
+RUN groupadd --system app && \
+    useradd --system --gid app --create-home --no-log-init app
+
 ENV PYTHONPATH=/app
+
+USER app:app
 
 EXPOSE 8000
 
